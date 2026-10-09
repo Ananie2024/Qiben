@@ -11,27 +11,65 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers=ApiController.class,properties="qiben.jwt-secret=0123456789abcdef0123456789abcdef")
-@Import({ApiConfig.class,JwtFilter.class,ApiErrors.class})
+@WebMvcTest(controllers = ApiController.class, properties = "qiben.jwt-secret=0123456789abcdef0123456789abcdef")
+@Import({ApiConfig.class, JwtFilter.class, ApiErrors.class})
 class AdminSecurityTest {
- @Autowired MockMvc mvc;
- @MockitoBean JdbcTemplate db;
- @MockitoBean PasswordEncoder encoder;
- @MockitoBean JavaMailSender mail;
- private String token(){return Jwts.builder().subject("admin@example.org").claim("kind","access").issuedAt(new Date()).expiration(new Date(System.currentTimeMillis()+60_000)).signWith(Keys.hmacShaKeyFor("0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8))).compact();}
- @Test void adminEndpointsRejectRequestsWithoutAccessToken() throws Exception {mvc.perform(get("/api/admin/dashboard")).andExpect(status().isUnauthorized());}
- @Test void adminEndpointsAcceptAValidAdminAccessToken() throws Exception {
-  when(db.queryForObject("SELECT COUNT(*) FROM contact_messages",Integer.class)).thenReturn(2);
-  when(db.queryForObject("SELECT COUNT(*) FROM contact_messages WHERE status='NEW'",Integer.class)).thenReturn(1);
-  when(db.queryForObject("SELECT COUNT(*) FROM contact_messages WHERE created_at>=DATE_FORMAT(CURRENT_DATE,'%Y-%m-01')",Integer.class)).thenReturn(1);
-  when(db.queryForObject("SELECT COUNT(*) FROM products WHERE published=TRUE AND type='PRODUCT'",Integer.class)).thenReturn(1);
-  when(db.queryForObject("SELECT COUNT(*) FROM products WHERE published=TRUE AND type='PROJECT'",Integer.class)).thenReturn(0);
-  mvc.perform(get("/api/admin/dashboard").header("Authorization","Bearer "+token())).andExpect(status().isOk());
- }
+    @Autowired MockMvc mvc;
+    @MockitoBean JdbcTemplate db;
+    @MockitoBean PasswordEncoder encoder;
+    @MockitoBean JavaMailSender mail;
+
+    private String token() {
+        return Jwts.builder()
+            .subject("admin@example.org")
+            .claim("kind", "access")
+            .issuedAt(new Date())
+            .expiration(new Date(System.currentTimeMillis() + 60_000))
+            .signWith(Keys.hmacShaKeyFor("0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8)))
+            .compact();
+    }
+
+    @Test
+    void adminEndpointsRejectRequestsWithoutAccessToken() throws Exception {
+        mvc.perform(get("/api/admin/dashboard")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void adminEndpointsAcceptAValidAdminAccessToken() throws Exception {
+        when(db.queryForObject("SELECT COUNT(*) FROM contact_messages", Integer.class)).thenReturn(2);
+        when(db.queryForObject("SELECT COUNT(*) FROM contact_messages WHERE status='NEW'", Integer.class)).thenReturn(1);
+        when(db.queryForObject("SELECT COUNT(*) FROM contact_messages WHERE created_at>=DATE_FORMAT(CURRENT_DATE,'%Y-%m-01')", Integer.class)).thenReturn(1);
+        when(db.queryForObject("SELECT COUNT(*) FROM products WHERE published=TRUE AND type='PRODUCT'", Integer.class)).thenReturn(1);
+        when(db.queryForObject("SELECT COUNT(*) FROM products WHERE published=TRUE AND type='PROJECT'", Integer.class)).thenReturn(0);
+
+        mvc.perform(get("/api/admin/dashboard").header("Authorization", "Bearer " + token())).andExpect(status().isOk());
+    }
+
+    @Test
+    void adminCanChangePasswordWithValidCurrentPassword() throws Exception {
+        when(db.queryForList("SELECT id, password_hash FROM admin_users WHERE email=?", "admin@example.org")).thenReturn(List.of(
+            Map.of("id", 1L, "password_hash", "$2a$12$hashedcurrent")
+        ));
+        when(encoder.matches("currentPassword123", "$2a$12$hashedcurrent")).thenReturn(true);
+        when(encoder.encode("newLongSecurePassword456")).thenReturn("$2a$12$hashednew");
+        when(db.update("UPDATE admin_users SET password_hash=? WHERE id=?", "$2a$12$hashednew", 1L)).thenReturn(1);
+
+        mvc.perform(post("/api/admin/change-password")
+            .header("Authorization", "Bearer " + token())
+            .contentType("application/json")
+            .content("""
+                {"currentPassword":"currentPassword123","newPassword":"newLongSecurePassword456"}
+            """)).andExpect(status().isOk());
+    }
 }
