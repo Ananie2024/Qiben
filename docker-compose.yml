@@ -1,0 +1,38 @@
+services:
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-qiben}
+      MARIADB_USER: ${MARIADB_USER:-qiben}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-qiben-dev}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-root-dev}
+    volumes:
+      - qiben-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  api:
+    build: ./backend
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file: .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://db:3306/${MARIADB_DATABASE:-qiben}
+      SPRING_DATASOURCE_USERNAME: ${MARIADB_USER:-qiben}
+      SPRING_DATASOURCE_PASSWORD: ${MARIADB_PASSWORD:-qiben-dev}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - qiben-media:/data/media
+  web:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8088:80"
+    depends_on:
+      - api
+volumes:
+  qiben-db:
+  qiben-media:
