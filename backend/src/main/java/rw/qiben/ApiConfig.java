@@ -21,8 +21,8 @@ import java.util.List;
 @Configuration
 public class ApiConfig {
     @Bean PasswordEncoder passwordEncoder(){ return new BCryptPasswordEncoder(12); }
-    @Bean CorsConfigurationSource cors(@Value("${qiben.frontend-origin}") String origin){
-        var c=new CorsConfiguration(); c.setAllowedOrigins(List.of(origin)); c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS")); c.setAllowedHeaders(List.of("Authorization","Content-Type")); c.setAllowCredentials(true);
+    @Bean CorsConfigurationSource cors(QibenProperties props){
+        var c=new CorsConfiguration(); c.setAllowedOrigins(List.of(props.getFrontendOrigin())); c.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS")); c.setAllowedHeaders(List.of("Authorization","Content-Type")); c.setAllowCredentials(true);
         var s=new UrlBasedCorsConfigurationSource(); s.registerCorsConfiguration("/**",c); return s;
     }
     @Bean SecurityFilterChain security(HttpSecurity http, JwtFilter jwtFilter) throws Exception {

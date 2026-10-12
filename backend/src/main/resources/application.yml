@@ -22,12 +22,10 @@ spring:
   servlet.multipart.max-file-size: 8MB
   servlet.multipart.max-request-size: 10MB
 qiben:
-  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+  admin-email: ${ADMIN_EMAIL:admin@qiben.rw}
+  admin-password: ${ADMIN_PASSWORD:changeme}
+  jwt-secret: btN/bk5bXJpJ/zE129mXFs5Uy/XZMqSSVnQiK6OoEXQPcA6mHrJun0KADbJt7f8KX3WaDV7a907ovMHtccJT1w==
+  cookie-secure: true
   site-url: ${SITE_URL:http://localhost:5173}
-  admin-email: ${ADMIN_EMAIL:}
-  admin-password: ${ADMIN_PASSWORD:}
-  jwt-secret: ${JWT_SECRET:}
-  cookie-secure: ${COOKIE_SECURE:false}
-  media-root: ${MEDIA_ROOT:./media}
-  inbox: ${QIBEN_INBOX:hello@example.com}
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
 springdoc.swagger-ui.path: /swagger-ui.html

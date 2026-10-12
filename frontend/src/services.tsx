@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowRight, ArrowUpRight, CheckCircle2, Cloud, Code2, PenTool, ShieldCheck, Smartphone, Workflow } from 'lucide-react'
+import { ArrowUpRight, CheckCircle2, Cloud, Code2, PenTool, ShieldCheck, Smartphone, Workflow } from 'lucide-react'
 import Header from './header'
 import Footer from './footer'
 
